@@ -1,0 +1,449 @@
+/* Periodic Table Styles */
+
+/* Base tile styles */
+.element-tile {
+  height: 60px;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  cursor: pointer;
+  border: 1px solid rgba(156, 163, 175, 0.28);
+  font-family: inherit;
+  background: transparent;
+}
+
+.element-tile:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.element-tile span {
+  pointer-events: none;
+}
+
+.element-tile .atomic-number {
+  font-size: 9px;
+  color: var(--muted);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+}
+
+.element-tile .symbol {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.element-tile .name {
+  font-size: 8.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  width: 100%;
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  text-align: center;
+}
+
+.element-tile .completion-dot {
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--periodic-muted);
+  box-shadow: 0 0 8px var(--periodic-muted);
+}
+
+/* Discovered elements (in Notion) - Real periodic table colors */
+.element-tile.discovered.metal {
+  background-color: rgba(192, 192, 192, 0.8);
+  border-color: rgba(128, 128, 128, 0.8);
+}
+
+.element-tile.discovered.metal:hover {
+  background-color: rgba(160, 160, 160, 0.9);
+  border-color: rgba(96, 96, 96, 0.9);
+}
+
+.element-tile.discovered.metal .completion-dot {
+  background: rgba(96, 96, 96, 0.9);
+  box-shadow: 0 0 8px rgba(96, 96, 96, 0.9);
+}
+
+.element-tile.discovered.metalloid {
+  background-color: rgba(144, 238, 144, 0.8);
+  border-color: rgba(104, 198, 104, 0.8);
+}
+
+.element-tile.discovered.metalloid:hover {
+  background-color: rgba(124, 218, 124, 0.9);
+  border-color: rgba(84, 178, 84, 0.9);
+}
+
+.element-tile.discovered.metalloid .completion-dot {
+  background: rgba(84, 178, 84, 0.9);
+  box-shadow: 0 0 8px rgba(84, 178, 84, 0.9);
+}
+
+.element-tile.discovered.nonmetal {
+  background-color: rgba(135, 206, 235, 0.8);
+  border-color: rgba(95, 166, 195, 0.8);
+}
+
+.element-tile.discovered.nonmetal:hover {
+  background-color: rgba(115, 186, 215, 0.9);
+  border-color: rgba(75, 146, 175, 0.9);
+}
+
+.element-tile.discovered.nonmetal .completion-dot {
+  background: rgba(75, 146, 175, 0.9);
+  box-shadow: 0 0 8px rgba(75, 146, 175, 0.9);
+}
+
+.element-tile.discovered.hydrogen {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(215, 215, 215, 0.8);
+}
+
+.element-tile.discovered.hydrogen:hover {
+  background-color: rgba(235, 235, 235, 0.95);
+  border-color: rgba(195, 195, 195, 0.9);
+}
+
+.element-tile.discovered.hydrogen .completion-dot {
+  background: rgba(195, 195, 195, 0.9);
+  box-shadow: 0 0 8px rgba(195, 195, 195, 0.9);
+}
+
+.element-tile.discovered.hydrogen .atomic-number,
+.element-tile.discovered.hydrogen .name {
+  color: #666;
+}
+
+.element-tile.discovered.halogen {
+  background-color: rgba(255, 215, 0, 0.8);
+  border-color: rgba(215, 175, 0, 0.8);
+}
+
+.element-tile.discovered.halogen:hover {
+  background-color: rgba(235, 195, 0, 0.9);
+  border-color: rgba(195, 155, 0, 0.9);
+}
+
+.element-tile.discovered.halogen .completion-dot {
+  background: rgba(195, 155, 0, 0.9);
+  box-shadow: 0 0 8px rgba(195, 155, 0, 0.9);
+}
+
+.element-tile.discovered.noble_gas {
+  background-color: rgba(173, 216, 230, 0.8);
+  border-color: rgba(133, 176, 190, 0.8);
+}
+
+.element-tile.discovered.noble_gas:hover {
+  background-color: rgba(153, 196, 210, 0.9);
+  border-color: rgba(113, 156, 170, 0.9);
+}
+
+.element-tile.discovered.noble_gas .completion-dot {
+  background: rgba(113, 156, 170, 0.9);
+  box-shadow: 0 0 8px rgba(113, 156, 170, 0.9);
+}
+
+.element-tile.discovered.lanthanide {
+  background-color: rgba(255, 182, 193, 0.8);
+  border-color: rgba(215, 142, 153, 0.8);
+}
+
+.element-tile.discovered.lanthanide:hover {
+  background-color: rgba(235, 162, 173, 0.9);
+  border-color: rgba(195, 122, 133, 0.9);
+}
+
+.element-tile.discovered.lanthanide .completion-dot {
+  background: rgba(195, 122, 133, 0.9);
+  box-shadow: 0 0 8px rgba(195, 122, 133, 0.9);
+}
+
+.element-tile.discovered.actinide {
+  background-color: rgba(255, 160, 122, 0.8);
+  border-color: rgba(215, 120, 82, 0.8);
+}
+
+.element-tile.discovered.actinide:hover {
+  background-color: rgba(235, 140, 102, 0.9);
+  border-color: rgba(195, 100, 62, 0.9);
+}
+
+.element-tile.discovered.actinide .completion-dot {
+  background: rgba(195, 100, 62, 0.9);
+  box-shadow: 0 0 8px rgba(195, 100, 62, 0.9);
+}
+
+/* Undiscovered elements - Grey */
+.element-tile.undiscovered {
+  background-color: var(--periodic-muted) !important;
+  border-color: rgba(156, 163, 175, 0.35) !important;
+  opacity: 0.62 !important;
+}
+
+.element-tile.undiscovered:hover {
+  background-color: var(--tile-base-bg) !important;
+  border-color: var(--tile-hover-border) !important;
+}
+
+/* Empty tiles */
+.element-tile.empty {
+  background: transparent;
+  border-color: rgba(156, 163, 175, 0.28);
+  cursor: default;
+}
+
+/* Periodic Table Container */
+.periodic-table-container {
+  border-radius: 18px;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.65);
+  background: radial-gradient(circle at top left, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.95));
+  overflow-x: auto;
+}
+
+.periodic-table-grid {
+  min-width: 720px;
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  gap: 4px;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .element-tile.discovered.metal {
+  background-color: rgba(160, 160, 160, 0.7);
+  border-color: rgba(200, 200, 200, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.metal:hover {
+  background-color: rgba(180, 180, 180, 0.8);
+  border-color: rgba(220, 220, 220, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.metal .completion-dot {
+  background: rgba(220, 220, 220, 0.9);
+  box-shadow: 0 0 8px rgba(220, 220, 220, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.metalloid {
+  background-color: rgba(100, 180, 100, 0.7);
+  border-color: rgba(140, 220, 140, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.metalloid:hover {
+  background-color: rgba(120, 200, 120, 0.8);
+  border-color: rgba(160, 240, 160, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.metalloid .completion-dot {
+  background: rgba(160, 240, 160, 0.9);
+  box-shadow: 0 0 8px rgba(160, 240, 160, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.nonmetal {
+  background-color: rgba(70, 130, 180, 0.7);
+  border-color: rgba(110, 170, 220, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.nonmetal:hover {
+  background-color: rgba(90, 150, 200, 0.8);
+  border-color: rgba(130, 190, 240, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.nonmetal .completion-dot {
+  background: rgba(130, 190, 240, 0.9);
+  box-shadow: 0 0 8px rgba(130, 190, 240, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.hydrogen {
+  background-color: rgba(220, 220, 220, 0.8);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.hydrogen:hover {
+  background-color: rgba(240, 240, 240, 0.9);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.hydrogen .completion-dot {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.hydrogen .atomic-number,
+[data-theme="dark"] .element-tile.discovered.hydrogen .name {
+  color: #333;
+}
+
+[data-theme="dark"] .element-tile.discovered.halogen {
+  background-color: rgba(200, 150, 0, 0.7);
+  border-color: rgba(240, 190, 0, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.halogen:hover {
+  background-color: rgba(220, 170, 0, 0.8);
+  border-color: rgba(255, 210, 0, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.halogen .completion-dot {
+  background: rgba(255, 210, 0, 0.9);
+  box-shadow: 0 0 8px rgba(255, 210, 0, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.noble_gas {
+  background-color: rgba(100, 150, 170, 0.7);
+  border-color: rgba(140, 190, 210, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.noble_gas:hover {
+  background-color: rgba(120, 170, 190, 0.8);
+  border-color: rgba(160, 210, 230, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.noble_gas .completion-dot {
+  background: rgba(160, 210, 230, 0.9);
+  box-shadow: 0 0 8px rgba(160, 210, 230, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.lanthanide {
+  background-color: rgba(200, 120, 140, 0.7);
+  border-color: rgba(240, 160, 180, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.lanthanide:hover {
+  background-color: rgba(220, 140, 160, 0.8);
+  border-color: rgba(255, 180, 200, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.lanthanide .completion-dot {
+  background: rgba(255, 180, 200, 0.9);
+  box-shadow: 0 0 8px rgba(255, 180, 200, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.actinide {
+  background-color: rgba(200, 100, 60, 0.7);
+  border-color: rgba(240, 140, 100, 0.8);
+}
+
+[data-theme="dark"] .element-tile.discovered.actinide:hover {
+  background-color: rgba(220, 120, 80, 0.8);
+  border-color: rgba(255, 160, 120, 0.9);
+}
+
+[data-theme="dark"] .element-tile.discovered.actinide .completion-dot {
+  background: rgba(255, 160, 120, 0.9);
+  box-shadow: 0 0 8px rgba(255, 160, 120, 0.9);
+}
+
+/* Responsive Periodic Table */
+@media (max-width: 768px) {
+  .periodic-table-grid {
+    gap: 2px !important;
+  }
+  
+  .element-tile {
+    padding: 2px 3px !important;
+    font-size: 10px !important;
+  }
+  
+  .element-tile .atomic-number {
+    font-size: 8px !important;
+  }
+  
+  .element-tile .symbol {
+    font-size: 11px !important;
+  }
+  
+  .element-tile .name {
+    font-size: 7px !important;
+  }
+  
+  .element-tile .completion-dot {
+    width: 4px !important;
+    height: 4px !important;
+    bottom: 1px !important;
+    right: 2px !important;
+  }
+  
+  .element-detail-modal {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+  }
+  
+  .element-detail-card {
+    padding: 1rem !important;
+  }
+  
+  .element-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .periodic-table-grid {
+    gap: 1px !important;
+  }
+  
+  .element-tile {
+    padding: 1px 2px !important;
+    font-size: 9px !important;
+  }
+  
+  .element-tile .atomic-number {
+    font-size: 7px !important;
+  }
+  
+  .element-tile .symbol {
+    font-size: 10px !important;
+  }
+  
+  .element-tile .name {
+    font-size: 6px !important;
+  }
+  
+  .element-tile .completion-dot {
+    width: 3px !important;
+    height: 3px !important;
+  }
+  
+  .element-detail-modal {
+    max-width: 98vw !important;
+    max-height: 95vh !important;
+  }
+  
+  .element-detail-card {
+    padding: 0.75rem !important;
+  }
+  
+  .element-detail-item {
+    padding: 0.5rem !important;
+  }
+  
+  .element-detail-item .label {
+    font-size: 11px !important;
+  }
+  
+  .element-detail-item .value {
+    font-size: 12px !important;
+  }
+}
