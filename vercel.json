@@ -20,8 +20,5 @@
       "src": "/(.*)",
       "dest": "/dist/$1"
     }
-  ],
-  "env": {
-    "VITE_NOTION_TOKEN": "@vercel-env-var"
-  }
+  ]
 }
