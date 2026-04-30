@@ -1,8 +1,18 @@
 const { Client } = require('@notionhq/client')
 
-const notion = new Client({
-  auth: process.env.VITE_NOTION_TOKEN
-})
+let notion
+try {
+  if (!process.env.VITE_NOTION_TOKEN) {
+    throw new Error('VITE_NOTION_TOKEN environment variable is not set')
+  }
+  notion = new Client({
+    auth: process.env.VITE_NOTION_TOKEN
+  })
+  console.log('Notion client initialized successfully')
+} catch (error) {
+  console.error('Failed to initialize Notion client:', error.message)
+  notion = null
+}
 
 // Database IDs
 const DATABASE_IDS = {
@@ -22,6 +32,12 @@ const PAGE_IDS = {
 
 // Main handler function
 module.exports = async (req, res) => {
+  console.log('=== Serverless Function Called ===')
+  console.log('Method:', req.method)
+  console.log('URL:', req.url)
+  console.log('Environment variable VITE_NOTION_TOKEN exists:', !!process.env.VITE_NOTION_TOKEN)
+  console.log('Token length:', process.env.VITE_NOTION_TOKEN?.length || 0)
+  
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -33,6 +49,7 @@ module.exports = async (req, res) => {
 
   const { url } = req
   const path = url.split('/api/')[1]
+  console.log('Path:', path)
 
   try {
     switch (path) {
@@ -41,6 +58,13 @@ module.exports = async (req, res) => {
         break
 
       case 'test':
+        if (!notion) {
+          return res.status(500).json({ 
+            success: false, 
+            error: 'Notion client not initialized',
+            message: 'Notion client initialization failed' 
+          })
+        }
         const response = await notion.users.me({})
         res.json({ 
           success: true, 
