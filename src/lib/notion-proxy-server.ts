@@ -27,37 +27,43 @@ const PROXY_BASE_URL = (typeof window !== 'undefined' &&
 export async function testProxyConnection(): Promise<boolean> {
   try {
     console.log('🔄 Testing proxy server connection...')
-    const response = await fetch(`${PROXY_BASE_URL}/health`)
-    
-    if (!response.ok) {
-      throw new Error(`Proxy server returned ${response.status}`)
+    const healthRes = await fetch(`${PROXY_BASE_URL}/health`)
+
+    if (!healthRes.ok) {
+      const errBody = await healthRes.text().catch(() => '')
+      throw new Error(
+        `GET /api/health → ${healthRes.status}${errBody ? `: ${errBody.slice(0, 200)}` : ''}`,
+      )
     }
-    
-    const data = await response.json()
+
+    const data = await healthRes.json()
     console.log('✅ Proxy server health check:', data)
-    
-    // Test Notion connection through proxy
+
     const notionResponse = await fetch(`${PROXY_BASE_URL}/test`)
-    
-    // Debug: Check the response before parsing JSON
     const responseText = await notionResponse.text()
     console.log('🔍 Proxy test-connection response:', responseText)
-    
+
+    if (!notionResponse.ok) {
+      throw new Error(
+        `GET /api/test → ${notionResponse.status}${responseText ? `: ${responseText.slice(0, 200)}` : ''}`,
+      )
+    }
+
     if (!responseText) {
       throw new Error('Empty response from proxy test-connection')
     }
-    
+
     let notionData
     try {
       notionData = JSON.parse(responseText)
-    } catch (parseError) {
+    } catch {
       throw new Error(`Invalid JSON from proxy: "${responseText}"`)
     }
-    
+
     if (!notionData.success) {
       throw new Error(`Notion connection failed: ${notionData.error}`)
     }
-    
+
     console.log('✅ Notion connection successful through proxy')
     return true
   } catch (error) {

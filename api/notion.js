@@ -1,13 +1,17 @@
 const { Client } = require('@notionhq/client')
 
+/** Server: prefer NOTION_TOKEN (Vercel “plain” secret); fall back to VITE_NOTION_TOKEN if you use one var for both. */
+function getNotionToken() {
+  return process.env.NOTION_TOKEN || process.env.VITE_NOTION_TOKEN
+}
+
 let notion
 try {
-  if (!process.env.VITE_NOTION_TOKEN) {
-    throw new Error('VITE_NOTION_TOKEN environment variable is not set')
+  const token = getNotionToken()
+  if (!token) {
+    throw new Error('Set NOTION_TOKEN or VITE_NOTION_TOKEN in Vercel project env')
   }
-  notion = new Client({
-    auth: process.env.VITE_NOTION_TOKEN
-  })
+  notion = new Client({ auth: token })
   console.log('Notion client initialized successfully')
 } catch (error) {
   console.error('Failed to initialize Notion client:', error.message)
@@ -70,12 +74,10 @@ async function readJsonBody(req) {
   })
 }
 
-/** Node ServerResponse has no res.json() — Vercel lambdas use plain Node HTTP. */
+/** Plain Node ServerResponse — no res.json(). Do not call res.getHeader (often missing on Vercel’s wrapper). */
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode
-  if (!res.getHeader('Content-Type')) {
-    res.setHeader('Content-Type', 'application/json; charset=utf-8')
-  }
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(payload))
 }
 
@@ -84,8 +86,7 @@ module.exports = async (req, res) => {
   console.log('=== Serverless Function Called ===')
   console.log('Method:', req.method)
   console.log('URL:', req.url)
-  console.log('Environment variable VITE_NOTION_TOKEN exists:', !!process.env.VITE_NOTION_TOKEN)
-  console.log('Token length:', process.env.VITE_NOTION_TOKEN?.length || 0)
+  console.log('Notion token set:', !!getNotionToken(), 'length:', getNotionToken()?.length || 0)
   
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -97,7 +98,9 @@ module.exports = async (req, res) => {
     return
   }
 
-  const path = normalizeApiPath(req.url || '')
+  const path = normalizeApiPath(
+    req.url || req.originalUrl || req.headers?.['x-invoke-path'] || ''
+  )
   console.log('Normalized path:', path)
 
   try {
@@ -194,7 +197,7 @@ module.exports = async (req, res) => {
           sendJson(res, 500, {
             success: false,
             error: 'Notion client not initialized',
-            message: 'Set VITE_NOTION_TOKEN in Vercel project settings',
+            message: 'Set NOTION_TOKEN or VITE_NOTION_TOKEN in Vercel project settings',
           })
           return
         }
@@ -260,10 +263,22 @@ module.exports = async (req, res) => {
     }
   } catch (error) {
     console.error('API Error:', error)
-    sendJson(res, 500, {
-      success: false,
-      error: error.message,
-      message: 'Request failed'
-    })
+    try {
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: error.message,
+          message: 'Request failed',
+        })
+      }
+    } catch (sendErr) {
+      console.error('Failed to send error JSON:', sendErr)
+      try {
+        if (!res.headersSent) {
+          res.statusCode = 500
+          res.end('Internal Server Error')
+        }
+      } catch (_) {}
+    }
   }
 }
