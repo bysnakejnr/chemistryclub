@@ -70,6 +70,15 @@ async function readJsonBody(req) {
   })
 }
 
+/** Node ServerResponse has no res.json() — Vercel lambdas use plain Node HTTP. */
+function sendJson(res, statusCode, payload) {
+  res.statusCode = statusCode
+  if (!res.getHeader('Content-Type')) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  }
+  res.end(JSON.stringify(payload))
+}
+
 // Main handler function
 module.exports = async (req, res) => {
   console.log('=== Serverless Function Called ===')
@@ -83,7 +92,8 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   
   if (req.method === 'OPTIONS') {
-    res.status(200).end()
+    res.statusCode = 200
+    res.end()
     return
   }
 
@@ -93,32 +103,34 @@ module.exports = async (req, res) => {
   try {
     switch (path) {
       case 'health':
-        res.json({ success: true, message: 'Server is healthy' })
+        sendJson(res, 200, { success: true, message: 'Server is healthy' })
         break
 
       case 'test':
         if (!notion) {
-          return res.status(500).json({ 
-            success: false, 
+          sendJson(res, 500, {
+            success: false,
             error: 'Notion client not initialized',
-            message: 'Notion client initialization failed' 
+            message: 'Notion client initialization failed',
           })
+          return
         }
         const response = await notion.users.me({})
-        res.json({ 
-          success: true, 
+        sendJson(res, 200, {
+          success: true,
           user: response,
-          message: 'Notion connection successful' 
+          message: 'Notion connection successful',
         })
         break
 
       case 'test-all-databases':
         if (!notion) {
-          return res.status(500).json({
+          sendJson(res, 500, {
             success: false,
             error: 'Notion client not initialized',
             message: 'Notion client initialization failed',
           })
+          return
         }
         const results = {}
         
@@ -165,29 +177,32 @@ module.exports = async (req, res) => {
           }
         }
         
-        res.json({
+        sendJson(res, 200, {
           success: true,
           databases: results,
           pages: pageResults,
-          message: 'All database connections tested'
+          message: 'All database connections tested',
         })
         break
 
       case 'query': {
         if (req.method !== 'POST') {
-          return res.status(405).json({ error: 'Method not allowed' })
+          sendJson(res, 405, { error: 'Method not allowed' })
+          return
         }
         if (!notion) {
-          return res.status(500).json({
+          sendJson(res, 500, {
             success: false,
             error: 'Notion client not initialized',
             message: 'Set VITE_NOTION_TOKEN in Vercel project settings',
           })
+          return
         }
         const body = await readJsonBody(req)
         const { databaseId, query: notionQuery = {} } = body
         if (!databaseId) {
-          return res.status(400).json({ error: 'Database ID is required' })
+          sendJson(res, 400, { error: 'Database ID is required' })
+          return
         }
 
         const queryResponse = await notion.databases.query({
@@ -195,7 +210,7 @@ module.exports = async (req, res) => {
           ...notionQuery,
         })
 
-        res.json({
+        sendJson(res, 200, {
           success: true,
           results: queryResponse.results,
           has_more: queryResponse.has_more,
@@ -207,10 +222,11 @@ module.exports = async (req, res) => {
       default:
         if (path && path.startsWith('databases/')) {
           if (!notion) {
-            return res.status(500).json({
+            sendJson(res, 500, {
               success: false,
               error: 'Notion client not initialized',
             })
+            return
           }
           const dbType = path.split('/')[1]
           const pathToKey = {
@@ -222,7 +238,8 @@ module.exports = async (req, res) => {
           const dbId = DATABASE_IDS[pathToKey[dbType] || dbType]
           
           if (!dbId) {
-            return res.status(404).json({ error: 'Database not found' })
+            sendJson(res, 404, { error: 'Database not found' })
+            return
           }
           
           const dbResponse = await notion.databases.query({
@@ -230,23 +247,23 @@ module.exports = async (req, res) => {
             page_size: 50
           })
           
-          res.json({
+          sendJson(res, 200, {
             success: true,
             results: dbResponse.results,
             has_more: dbResponse.has_more,
             next_cursor: dbResponse.next_cursor
           })
         } else {
-          res.status(404).json({ error: 'Endpoint not found' })
+          sendJson(res, 404, { error: 'Endpoint not found' })
         }
         break
     }
   } catch (error) {
     console.error('API Error:', error)
-    res.status(500).json({ 
-      success: false, 
+    sendJson(res, 500, {
+      success: false,
       error: error.message,
-      message: 'Request failed' 
+      message: 'Request failed'
     })
   }
 }
