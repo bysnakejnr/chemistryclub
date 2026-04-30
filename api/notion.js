@@ -30,6 +30,46 @@ const PAGE_IDS = {
   dictionary: '875356231f8c83e0b7708190eab22c43'
 }
 
+/** Vercel often passes req.url as `/health` or full URL; normalize to e.g. `health`, `query`. */
+function normalizeApiPath(url) {
+  if (!url || typeof url !== 'string') return ''
+  let pathname = url.split('?')[0]
+  const marker = '/api/'
+  const idx = pathname.indexOf(marker)
+  if (idx !== -1) {
+    pathname = pathname.slice(idx + marker.length)
+  } else if (pathname.startsWith('/')) {
+    pathname = pathname.slice(1)
+  }
+  return pathname.replace(/^\/+/, '')
+}
+
+async function readJsonBody(req) {
+  if (req.body != null && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    return req.body
+  }
+  if (typeof req.body === 'string') {
+    try {
+      return JSON.parse(req.body)
+    } catch {
+      return {}
+    }
+  }
+  return await new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', (c) => chunks.push(c))
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf8')
+        resolve(raw ? JSON.parse(raw) : {})
+      } catch (e) {
+        reject(e)
+      }
+    })
+    req.on('error', reject)
+  })
+}
+
 // Main handler function
 module.exports = async (req, res) => {
   console.log('=== Serverless Function Called ===')
@@ -47,9 +87,8 @@ module.exports = async (req, res) => {
     return
   }
 
-  const { url } = req
-  const path = url.split('/api/')[1]
-  console.log('Path:', path)
+  const path = normalizeApiPath(req.url || '')
+  console.log('Normalized path:', path)
 
   try {
     switch (path) {
@@ -74,6 +113,13 @@ module.exports = async (req, res) => {
         break
 
       case 'test-all-databases':
+        if (!notion) {
+          return res.status(500).json({
+            success: false,
+            error: 'Notion client not initialized',
+            message: 'Notion client initialization failed',
+          })
+        }
         const results = {}
         
         // Test each database
@@ -127,33 +173,53 @@ module.exports = async (req, res) => {
         })
         break
 
-      case 'query':
+      case 'query': {
         if (req.method !== 'POST') {
           return res.status(405).json({ error: 'Method not allowed' })
         }
-        
-        const { databaseId, pageSize = 10 } = req.body
+        if (!notion) {
+          return res.status(500).json({
+            success: false,
+            error: 'Notion client not initialized',
+            message: 'Set VITE_NOTION_TOKEN in Vercel project settings',
+          })
+        }
+        const body = await readJsonBody(req)
+        const { databaseId, query: notionQuery = {} } = body
         if (!databaseId) {
           return res.status(400).json({ error: 'Database ID is required' })
         }
-        
+
         const queryResponse = await notion.databases.query({
           database_id: databaseId,
-          page_size: pageSize
+          ...notionQuery,
         })
-        
+
         res.json({
           success: true,
           results: queryResponse.results,
           has_more: queryResponse.has_more,
-          next_cursor: queryResponse.next_cursor
+          next_cursor: queryResponse.next_cursor,
         })
         break
+      }
 
       default:
-        if (path.startsWith('databases/')) {
+        if (path && path.startsWith('databases/')) {
+          if (!notion) {
+            return res.status(500).json({
+              success: false,
+              error: 'Notion client not initialized',
+            })
+          }
           const dbType = path.split('/')[1]
-          const dbId = DATABASE_IDS[dbType]
+          const pathToKey = {
+            'chem-info': 'chemInfo',
+            'field-trips': 'fieldTrips',
+            elements: 'elements',
+            dictionary: 'dictionary',
+          }
+          const dbId = DATABASE_IDS[pathToKey[dbType] || dbType]
           
           if (!dbId) {
             return res.status(404).json({ error: 'Database not found' })

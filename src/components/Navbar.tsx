@@ -84,7 +84,7 @@ export function Navbar({ theme, onToggleTheme }: NavbarProps) {
           }}
         >
           <img
-            src="/src/assets/chem-logo.png"
+            src="/chem-logo.png"
             alt="Chem Club Logo"
             style={{
               width: '100%',
