@@ -1,7 +1,8 @@
 // Notion client that uses our proxy server
 import type { ChemElement, ClubEvent } from '../types'
 
-const PROXY_BASE_URL = typeof process !== 'undefined' && process.env.NODE_ENV === 'production' 
+const PROXY_BASE_URL = (typeof window !== 'undefined' && 
+  (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) 
   ? '/api' 
   : 'http://localhost:3001/api'
 
