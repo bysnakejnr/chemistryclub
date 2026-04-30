@@ -7,14 +7,14 @@
       "config": { "distDir": "dist" }
     },
     {
-      "src": "server.cjs",
+      "src": "api/notion.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server.cjs"
+      "dest": "/api/notion.js"
     },
     {
       "src": "/(.*)",
