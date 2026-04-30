@@ -1,21 +1,19 @@
-const { Client } = require('@notionhq/client')
+import { Client } from '@notionhq/client'
 
-/** Server: prefer NOTION_TOKEN (Vercel “plain” secret); fall back to VITE_NOTION_TOKEN if you use one var for both. */
+/** Server: prefer NOTION_TOKEN; fall back to VITE_NOTION_TOKEN. */
 function getNotionToken() {
   return process.env.NOTION_TOKEN || process.env.VITE_NOTION_TOKEN
 }
 
-let notion
-try {
+let notionClient = null
+
+function getNotion() {
   const token = getNotionToken()
-  if (!token) {
-    throw new Error('Set NOTION_TOKEN or VITE_NOTION_TOKEN in Vercel project env')
+  if (!token) return null
+  if (!notionClient) {
+    notionClient = new Client({ auth: token })
   }
-  notion = new Client({ auth: token })
-  console.log('Notion client initialized successfully')
-} catch (error) {
-  console.error('Failed to initialize Notion client:', error.message)
-  notion = null
+  return notionClient
 }
 
 // Database IDs
@@ -23,7 +21,7 @@ const DATABASE_IDS = {
   chemInfo: 'ff4356231f8c83e5abbe8145d499aa73',
   fieldTrips: '5a6356231f8c8278897101702c5ae9bb',
   elements: '398356231f8c82d0913201f0342b5b61',
-  dictionary: 'da8356231f8c836993d50193a5c0cb94'
+  dictionary: 'da8356231f8c836993d50193a5c0cb94',
 }
 
 // Page IDs
@@ -31,7 +29,7 @@ const PAGE_IDS = {
   chemInfo: '875356231f8c83e0b7708190eab22c43',
   fieldTrips: '875356231f8c83e0b7708190eab22c43',
   elements: '875356231f8c83e0b7708190eab22c43',
-  dictionary: '875356231f8c83e0b7708190eab22c43'
+  dictionary: '875356231f8c83e0b7708190eab22c43',
 }
 
 /** Vercel often passes req.url as `/health` or full URL; normalize to e.g. `health`, `query`. */
@@ -74,24 +72,22 @@ async function readJsonBody(req) {
   })
 }
 
-/** Plain Node ServerResponse — no res.json(). Do not call res.getHeader (often missing on Vercel’s wrapper). */
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(payload))
 }
 
-// Main handler function
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   console.log('=== Serverless Function Called ===')
   console.log('Method:', req.method)
   console.log('URL:', req.url)
   console.log('Notion token set:', !!getNotionToken(), 'length:', getNotionToken()?.length || 0)
-  
+
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  
+
   if (req.method === 'OPTIONS') {
     res.statusCode = 200
     res.end()
@@ -99,7 +95,7 @@ module.exports = async (req, res) => {
   }
 
   const path = normalizeApiPath(
-    req.url || req.originalUrl || req.headers?.['x-invoke-path'] || ''
+    req.url || req.originalUrl || req.headers?.['x-invoke-path'] || '',
   )
   console.log('Normalized path:', path)
 
@@ -109,7 +105,8 @@ module.exports = async (req, res) => {
         sendJson(res, 200, { success: true, message: 'Server is healthy' })
         break
 
-      case 'test':
+      case 'test': {
+        const notion = getNotion()
         if (!notion) {
           sendJson(res, 500, {
             success: false,
@@ -118,15 +115,17 @@ module.exports = async (req, res) => {
           })
           return
         }
-        const response = await notion.users.me({})
+        const notionUser = await notion.users.me({})
         sendJson(res, 200, {
           success: true,
-          user: response,
+          user: notionUser,
           message: 'Notion connection successful',
         })
         break
+      }
 
-      case 'test-all-databases':
+      case 'test-all-databases': {
+        const notion = getNotion()
         if (!notion) {
           sendJson(res, 500, {
             success: false,
@@ -136,50 +135,48 @@ module.exports = async (req, res) => {
           return
         }
         const results = {}
-        
-        // Test each database
+
         for (const [key, databaseId] of Object.entries(DATABASE_IDS)) {
           try {
-            const response = await notion.databases.query({
+            const dbQuery = await notion.databases.query({
               database_id: databaseId,
-              page_size: 1
+              page_size: 1,
             })
             results[key] = {
               success: true,
               databaseId: databaseId,
-              count: response.results.length,
-              has_more: response.has_more
+              count: dbQuery.results.length,
+              has_more: dbQuery.has_more,
             }
           } catch (error) {
             results[key] = {
               success: false,
               databaseId: databaseId,
-              error: error.message
+              error: error.message,
             }
           }
         }
-        
-        // Test page access
+
         const pageResults = {}
         for (const [key, pageId] of Object.entries(PAGE_IDS)) {
           try {
-            const response = await notion.pages.retrieve({
-              page_id: pageId
+            const page = await notion.pages.retrieve({
+              page_id: pageId,
             })
             pageResults[key] = {
               success: true,
               pageId: pageId,
-              title: response.properties?.title?.title?.[0]?.plain_text || 'No title'
+              title: page.properties?.title?.title?.[0]?.plain_text || 'No title',
             }
           } catch (error) {
             pageResults[key] = {
               success: false,
               pageId: pageId,
-              error: error.message
+              error: error.message,
             }
           }
         }
-        
+
         sendJson(res, 200, {
           success: true,
           databases: results,
@@ -187,12 +184,14 @@ module.exports = async (req, res) => {
           message: 'All database connections tested',
         })
         break
+      }
 
       case 'query': {
         if (req.method !== 'POST') {
           sendJson(res, 405, { error: 'Method not allowed' })
           return
         }
+        const notion = getNotion()
         if (!notion) {
           sendJson(res, 500, {
             success: false,
@@ -224,6 +223,7 @@ module.exports = async (req, res) => {
 
       default:
         if (path && path.startsWith('databases/')) {
+          const notion = getNotion()
           if (!notion) {
             sendJson(res, 500, {
               success: false,
@@ -239,22 +239,22 @@ module.exports = async (req, res) => {
             dictionary: 'dictionary',
           }
           const dbId = DATABASE_IDS[pathToKey[dbType] || dbType]
-          
+
           if (!dbId) {
             sendJson(res, 404, { error: 'Database not found' })
             return
           }
-          
+
           const dbResponse = await notion.databases.query({
             database_id: dbId,
-            page_size: 50
+            page_size: 50,
           })
-          
+
           sendJson(res, 200, {
             success: true,
             results: dbResponse.results,
             has_more: dbResponse.has_more,
-            next_cursor: dbResponse.next_cursor
+            next_cursor: dbResponse.next_cursor,
           })
         } else {
           sendJson(res, 404, { error: 'Endpoint not found' })
